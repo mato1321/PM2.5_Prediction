@@ -1,11 +1,11 @@
-# PM2.5 空氣品質預測 - 機器學習最終報告
-**ML Final Report:  Taiwan PM2.5 Prediction System**
+# ML Final Report:  Taiwan PM2.5 Prediction System
 
 ## 項目概述
 
 本項目使用多種機器學習與深度學習模型預測**臺灣空氣品質 (PM2.5 濃度)**，並進行模型性能對比與特徵重要性分析。
 
 ### 主要特點
+
  **5 大預測模型**:  LSTM、RNN、XGBoost、Random Forest、及模型比較分析  
  **多層次分析**: 時間序列預測、各測站預測、特徵相關性分析  
  **完整可視化**: 折線圖、柱狀圖、熱力圖、預測對比圖  
@@ -18,40 +18,44 @@
 ```
 PM2.5_Prediction/
 │
-├──  LSTM 模型 (深度學習時間序列)
-│   ├── LSTM_TaipeiPM2.5.py          # 基礎 LSTM 預測模型 (2026-2028)
-│   ├── LSTM_linechart.py            # LSTM 預測結果折線圖
-│   ├── LSTM_station.py              # 按測站 LSTM 預測 (48h lookback)
-│   ├── LSTM_barchart.py             # LSTM 性能柱狀圖
-│   └── LSTM_vs_RNN. py               # LSTM vs RNN 性能對比
+├──  README.md                          # 本檔案
+├──  requirements.txt                   # 依賴環境
 │
-├──  RNN 模型 (簡單循環神經網絡)
-│   ├── RNN_station.py               # 按測站 SimpleRNN 預測
-│   ├── RNN_linechart.py             # RNN 預測結果折線圖
-│   └── RNN_barchart. py              # RNN 性能柱狀圖
+├──  src/                               #  主要代碼目錄 
+│   │
+│   ├──  LSTM 系列 (深度學習時間序列)
+│   │   ├── LSTM_TaipeiPM2.5.py          # LSTM 未來預測 (2026-2028 三年預測)
+│   │   ├── LSTM_linechart.py            # LSTM 預測折線圖 (實際 vs 預測)
+│   │   ├── LSTM_station. py              # 多測站 LSTM 預測 (48h lookback, 雙層架構)
+│   │   ├── LSTM_barchart.py             # LSTM 性能評估柱狀圖
+│   │   └── LSTM_vs_RNN.py               # 對比分析:  LSTM vs RNN 性能
+│   │
+│   ├──  RNN 系列 (簡單循環神經網絡)
+│   │   ├── RNN_station.py               # SimpleRNN 按測站預測
+│   │   ├── RNN_linechart.py             # RNN 預測結果對比圖
+│   │   └── RNN_barchart.py              # RNN 性能柱狀圖 & 特徵重要性
+│   │
+│   ├──  XGBoost 系列 (梯度提升決策樹)
+│   │   ├── XGBoost_linechart.py         # XGBoost 預測折線圖 (10 天 240h)
+│   │   ├── XGBoost_barchart.py          # XGBoost 各站精度 + 特徵排名
+│   │   └── XGBoost_vs_Random_Forest.py  # 模型對決:  XGB vs RF
+│   │
+│   ├──  Random Forest 系列 (隨機森林)
+│   │   ├── randomforest_linechart.py    # RF 預測結果折線圖
+│   │   └── randomforest_barchart.py     # RF 特徵重要性 & 各站 MAE
+│   │
+│   ├── 📊 特徵分析 & 相關性研究
+│   │   ├── All_Pearson_Correlation. py   # 核心特徵皮爾森相關性熱力圖
+│   │   ├── Weather_Pearson_Correlation.py # 氣象因子對 PM2.5 的影響
+│   │   ├── feature_barchart.py          # 特徵相關性柱狀圖
+│   │   └── weather_barchart.py          # 氣象變數影響分數分析
 │
-├──  XGBoost 模型 (梯度提升)
-│   ├── XGBoost_linechart.py         # XGBoost 預測結果折線圖
-│   ├── XGBoost_barchart.py          # XGBoost 性能柱狀圖
-│   └── XGBoost_vs_Random Forest.py  # XGBoost vs Random Forest 對比
-│
-├──  Random Forest 模型 (隨機森林)
-│   ├── randomforest_linechart.py    # Random Forest 預測折線圖
-│   └── randomforest_barchart. py     # Random Forest 特徵重要性 & 各站 MAE
-│
-├──  特徵分析 & 相關性研究
-│   ├── All_Pearson_Correlation. py   # 核心特徵與 PM2.5 相關係數分析
-│   ├── Weather_Pearson_Correlation.py # 氣象因子相關性分析
-│   ├── feature_barchart. py          # 特徵重要性柱狀圖
-│   └── weather_barchart. py          # 氣象因子影響分數圖
-│
-├──  資料檔案 (需手動上傳到 Colab /content/)
-│   ├── FINAL_MODEL_TRAINING_DATA. csv
-│   ├── ALL_YEARS_PM25_TARGET_AND_LAG_FEATURES.csv
-│   ├── ALL_YEARS_METEO_STANDARDIZED (1).csv
-│   └── 微軟正黑體-1.ttf (中文字體)
-│
-└── README.md (本檔案)
+├── content/                           # 資料目錄 
+│   ├── FINAL_MODEL_TRAINING_DATA.csv                  #  主訓練資料
+│   ├── ALL_YEARS_PM25_TARGET_AND_LAG_FEATURES.csv    # PM2.5 滯後特徵
+│   ├── ALL_YEARS_METEO_STANDARDIZED. csv              # 氣象標準化數據
+├── └── 微軟正黑體-1.ttf                              # 中文字體 (可選)
+
 ```
 
 ---
@@ -70,7 +74,7 @@ pip install -r requirements.txt
 在 Google Colab 中上傳以下檔案到 `/content/` 目錄：
 - `FINAL_MODEL_TRAINING_DATA.csv` ← 主訓練資料
 - `ALL_YEARS_PM25_TARGET_AND_LAG_FEATURES.csv` ← PM2.5 特徵數據
-- `ALL_YEARS_METEO_STANDARDIZED (1).csv` ← 氣象特徵數據
+- `ALL_YEARS_METEO_STANDARDIZED.csv` ← 氣象特徵數據
 - `微軟正黑體-1.ttf` ← 中文字體 (可選)
 
 ### 3️⃣ 運行模型
@@ -220,7 +224,7 @@ PM2.5 濃度
 
 ---
 
-## 🔧 進階設置
+##  進階設置
 
 ### 調整 LSTM 參數
 ```python
