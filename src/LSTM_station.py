@@ -11,34 +11,30 @@ import matplotlib.font_manager as fm
 import matplotlib as mpl
 import os
 
-# --- 1. 字體設定 (保證中文顯示) ---
 font_path = "/content/微軟正黑體-1.ttf"
 
 if not os.path.exists(font_path):
     raise FileNotFoundError("❌ 找不到字體檔：微軟正黑體-1.ttf")
 
-# 載入字體
 fm.fontManager.addfont(font_path)
 font_prop = fm.FontProperties(fname=font_path)
 
-# 設定全域字體
 mpl.rcParams['font.family'] = font_prop.get_name()
 mpl.rcParams['axes.unicode_minus'] = False
 
 
-# --- 2. 資料讀取與特徵工程 ---
+#資料讀取與特徵工程
 print("正在讀取並進行特徵工程 (Feature Engineering)...")
 df_pm25 = pd.read_csv("ALL_YEARS_PM25_TARGET_AND_LAG_FEATURES.csv")
 df_meteo = pd.read_csv("ALL_YEARS_METEO_STANDARDIZED (1).csv")
 
-# 合併
 df = pd.merge(df_pm25, df_meteo, on=['測站', '日期', '小時'], how='inner')
 
 # 建立 Datetime
 df['Datetime'] = pd.to_datetime(df['日期'] + ' ' + df['小時'].astype(str) + ':00:00')
 df = df.sort_values(['測站', 'Datetime'])
 
-# [改進 1] 加入時間週期特徵 (讓模型懂 上班時間 vs 半夜)
+# 加入時間週期特徵 
 df['Hour_Sin'] = np.sin(2 * np.pi * df['小時'] / 24)
 df['Hour_Cos'] = np.cos(2 * np.pi * df['小時'] / 24)
 
@@ -46,13 +42,13 @@ df['Hour_Cos'] = np.cos(2 * np.pi * df['小時'] / 24)
 df['Wind_Sin'] = np.sin(df['WIND_DIREC'] * (np.pi / 180))
 df['Wind_Cos'] = np.cos(df['WIND_DIREC'] * (np.pi / 180))
 
-# 定義特徵 (加入 Hour_Sin/Cos)
-feature_cols = ['PM25_Lag_1h', 'PM25_Lag_2h', 'PM25_Lag_24h', # 確保 Lag_24h 也在
+# 特徵加入 Hour_Sin/Cos
+feature_cols = ['PM25_Lag_1h', 'PM25_Lag_2h', 'PM25_Lag_24h',
                 'RAINFALL', 'WIND_SPEED', 'RH', 'AMB_TEMP',
                 'Wind_Sin', 'Wind_Cos', 'Hour_Sin', 'Hour_Cos']
 target_col = 'PM2.5_Value'
 
-# --- 3. 設定預測區間 ---
+# 設定預測區間
 target_start_date = '2024-12-20'
 target_end_date = '2024-12-29'
 stations = df['測站'].unique()
@@ -68,7 +64,7 @@ def create_sequences(X, y, time_steps):
         ys.append(y[i + time_steps])
     return np.array(Xs), np.array(ys)
 
-# --- 4. 迴圈訓練 ---
+# 迴圈訓練
 for station in stations:
     print(f"\n⚡ 正在強化訓練測站：{station} ...")
 
@@ -77,7 +73,7 @@ for station in stations:
     # 切分訓練與測試
     train_data = df_station[df_station['Datetime'] < pd.Timestamp(target_start_date)]
 
-    # [改進 2] 延長 Lookback 到 48 小時 (兩天)
+    # 延長 Lookback 到 48 小時 
     lookback_hours = 48
 
     # 測試集準備
@@ -105,19 +101,19 @@ for station in stations:
 
     if len(X_test_seq) == 0: continue
 
-    # [改進 3] 建立雙層 LSTM 模型 (Stacked LSTM)
+    # 建立雙層 LSTM 模型 (Stacked LSTM)
     model = Sequential([
         Input(shape=(lookback_hours, len(feature_cols))),
 
-        # 第一層：128 神經元，return_sequences=True 代表要傳給下一層
+        # 第一層：128 神經元
         LSTM(128, return_sequences=True),
         Dropout(0.3), # 稍微提高 Dropout 防止過擬合
 
-        # 第二層：64 神經元，不再回傳序列
+        # 第二層：64 神經元
         LSTM(64, return_sequences=False),
         Dropout(0.3),
 
-        # [改進 4] 加入 Dense 層進行特徵整合
+        # 加入 Dense 層進行特徵整合
         Dense(32, activation='relu'),
         Dense(1)
     ])
@@ -125,11 +121,11 @@ for station in stations:
     # 使用 Adam 優化器
     model.compile(optimizer='adam', loss='mse')
 
-    # 設定 Callbacks (自動調整學習率 + 早停)
+    # 設定 Callbacks 
     early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=0.0001)
 
-    # 訓練 (Epochs 設為 50，Batch Size 32)
+    # 訓練
     model.fit(X_train_seq, y_train_seq,
               epochs=50, batch_size=32,
               validation_split=0.1,
@@ -151,16 +147,16 @@ for station in stations:
     result_df.set_index('Datetime', inplace=True)
     daily_avg = result_df.resample('D').mean()
 
-    # --- 繪圖 (微調樣式) ---
+    # 繪圖 
     plt.figure(figsize=(10, 5))
     x_indices = range(len(daily_avg))
     date_labels = daily_avg.index.strftime('%m/%d')
 
-    # 真實值 (紅色實線，加粗)
+    # 真實值 (紅色實線)
     plt.plot(x_indices, daily_avg['Actual'],
              color='#d62728', marker='o', markersize=8, linewidth=3, label='真實 PM2.5', alpha=0.8)
 
-    # 預測值 (藍色虛線，加粗)
+    # 預測值 (藍色虛線)
     plt.plot(x_indices, daily_avg['Predicted'],
              color='#1f77b4', marker='s', markersize=8, linewidth=3, linestyle='--', label='LSTM 預測', alpha=0.9)
 

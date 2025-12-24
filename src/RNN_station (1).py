@@ -7,12 +7,10 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import SimpleRNN, Dense
 from sklearn.preprocessing import MinMaxScaler
 
-# --- 1. 設定環境與種子 ---
+
 tf.random.set_seed(42)
 np.random.seed(42)
 
-# --- 2. 準備歷史數據 (模擬台北市 2019-2025 "每4個月" 的均值) ---
-# 格式：[Jan, May, Sep] 循環
 raw_data_list = []
 base_jan = 16.5
 base_may = 13.5
@@ -33,7 +31,7 @@ raw_data = np.array(raw_data_list)
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(raw_data.reshape(-1, 1))
 
-# --- 3. 調整資料集 ---
+# 調整資料集
 look_back = 3
 
 X, y = [], []
@@ -43,11 +41,9 @@ for i in range(len(scaled_data) - look_back):
 X, y = np.array(X), np.array(y)
 X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
-# --- 4. 建立與訓練 RNN 模型 (關鍵修改區) ---
+# 建立與訓練 RNN 模型 
 model = Sequential()
 
-# 將 LSTM 改為 SimpleRNN
-# activation='relu' 對於數值回歸任務通常表現較好
 model.add(SimpleRNN(50, activation='relu', input_shape=(look_back, 1)))
 
 model.add(Dense(1))
@@ -56,7 +52,7 @@ model.compile(optimizer='adam', loss='mse')
 print("正在訓練 RNN 模型...")
 model.fit(X, y, epochs=250, verbose=0)
 
-# --- 5. 執行預測 (2026-2028) ---
+#執行預測 (2026-2028)
 future_steps = 9
 predictions = []
 
@@ -69,7 +65,7 @@ for i in range(future_steps):
 
 predicted_values = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
 
-# --- 6. 建立繪圖資料 ---
+# 建立繪圖資料
 date_strings = [
     '2026-01-01', '2026-05-01', '2026-09-01',
     '2027-01-01', '2027-05-01', '2027-09-01',
@@ -82,9 +78,8 @@ df_pred = pd.DataFrame({
     'PM2.5': predicted_values.flatten()
 })
 
-# --- 7. 繪製折線圖 ---
+# 繪製折線圖 
 plt.figure(figsize=(11, 6))
-# 顏色改為藍色以示區別
 plt.plot(df_pred['Date'], df_pred['PM2.5'], marker='s', linestyle='--',
          color='#1f77b4', linewidth=2, markersize=8, label='RNN Forecast')
 
@@ -113,4 +108,3 @@ plt.show()
 
 print("\n--- RNN 預測數值 ---")
 print(df_pred)
-print("藍色屁眼")

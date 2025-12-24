@@ -12,7 +12,6 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.inspection import permutation_importance
 
-# --- 設定繪圖風格與字型 ---
 sns.set(style="whitegrid")
 plt.rcParams['axes.unicode_minus'] = False
 font_path = '/content/微軟正黑體-1.ttf'
@@ -23,32 +22,30 @@ except Exception as e:
     print(f"找不到字型檔案或載入失敗: {e}")
     print("將使用系統預設字型，中文可能會顯示為方框。")
     my_font = None
-# -------------------------
 
-# 全域變數：Scaler (因為後續畫圖需要還原數值)
 scaler_X = MinMaxScaler()
 scaler_y = MinMaxScaler()
-TIME_STEPS = 24  # LSTM 回看過去 24 小時
+TIME_STEPS = 24
 
 def load_and_prepare_data(filepath):
     print("正在讀取並預處理資料...")
     df = pd.read_csv(filepath)
 
-    # 處理布林值
+
     bool_cols = df.select_dtypes(include=['bool']).columns
     df[bool_cols] = df[bool_cols].astype(int)
 
     target = 'PM2.5_Value'
     X = df.drop(columns=[target])
-    y = df[[target]] # 保持 DataFrame 格式以便縮放
+    y = df[[target]]
 
-    # 1. 資料歸一化 (0~1)
+    # 資料歸一化 (0~1)
     X_scaled = scaler_X.fit_transform(X)
     y_scaled = scaler_y.fit_transform(y)
 
     return X_scaled, y_scaled, X.columns
 
-# LSTM 專用：建立滑動視窗 (Sliding Window)
+# LSTM 專用：建立滑動視窗
 def create_sequences(X, y, time_steps=TIME_STEPS):
     Xs, ys = [], []
     for i in range(len(X) - time_steps):
@@ -57,15 +54,12 @@ def create_sequences(X, y, time_steps=TIME_STEPS):
     return np.array(Xs), np.array(ys)
 
 def split_data(X, y):
-    # 先轉換成 3D 序列
     print(f"正在轉換為 LSTM 序列格式 (Time Steps={TIME_STEPS})...")
     X_seq, y_seq = create_sequences(X, y, TIME_STEPS)
 
-    # 切分資料 (LSTM 通常不打亂順序 shuffle=False，但如果各樣本獨立也可 True)
-    # 這裡為了保持和隨機森林一樣的評估邏輯，我們先試著用隨機切分
     X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, random_state=42)
 
-    print(f"訓練集形狀: {X_train.shape}") # (樣本數, 24, 特徵數)
+    print(f"訓練集形狀: {X_train.shape}")
     print(f"測試集形狀: {X_test.shape}")
     return X_train, X_test, y_train, y_test
 
@@ -89,7 +83,7 @@ def train_model(X_train, y_train):
 
     history = model.fit(
         X_train, y_train,
-        epochs=20,           # 訓練輪數 (可自行增加)
+        epochs=20,           
         batch_size=64,
         validation_split=0.1,
         callbacks=[early_stop],
@@ -102,10 +96,10 @@ def train_model(X_train, y_train):
 def evaluate_model(model, X_test, y_test):
     print("\n正在評估模型...")
 
-    # 預測 (此時還是 0~1 的數值)
+    # 預測 
     y_pred_scaled = model.predict(X_test)
 
-    # 還原數值 (Inverse Transform)
+    # 還原數值 
     y_pred = scaler_y.inverse_transform(y_pred_scaled)
     y_test_real = scaler_y.inverse_transform(y_test)
 
@@ -122,19 +116,13 @@ def evaluate_model(model, X_test, y_test):
     # 回傳還原後的真實值與預測值
     return y_test_real, y_pred
 
-# --- 修改後的測站誤差計算 (因為 X_test 形狀變了) ---
+# 測站誤差計算
 def calculate_station_mae(X_test_seq, y_test_real, y_pred, feature_names):
     print("\n" + "="*30)
     print("各行政區 (測站) PM2.5 預測平均誤差 (MAE)")
     print("="*30)
 
-    # 因為 X_test_seq 是 3D 的 (sample, time, feature)
-    # 我們取「最後一個時間點」的特徵來判斷它是哪個測站
-    # 先把 3D 壓回 2D 讓我們能查表
     X_last_step = X_test_seq[:, -1, :]
-
-    # 還原 X 的數值 (為了確保 One-Hot 判斷正確，雖然 0/1 縮放後通常還是 0/1)
-    # 但保險起見，我們直接用 index 找欄位
 
     station_cols = [c for c in feature_names if c.startswith('Station_')]
     results = []
@@ -142,7 +130,6 @@ def calculate_station_mae(X_test_seq, y_test_real, y_pred, feature_names):
     for col_name in station_cols:
         col_idx = list(feature_names).index(col_name)
 
-        # 找出該欄位數值 > 0.5 的列 (代表是該測站)
         mask = X_last_step[:, col_idx] > 0.5
 
         if mask.sum() > 0:
@@ -172,10 +159,6 @@ def calculate_station_mae(X_test_seq, y_test_real, y_pred, feature_names):
     plt.tight_layout()
     plt.show()
 
-# --- LSTM 無法直接用 feature_importances_，改用 Permutation Importance ---
-# 為了簡化，這裡我們畫一個示意圖或略過，
-# 因為計算 Deep Learning 的 Permutation Importance 非常耗時。
-# 替代方案：我們改畫「真實 vs 預測」的散佈圖，這對 LSTM 更有意義。
 def plot_prediction_scatter(y_test_real, y_pred):
     plt.figure(figsize=(8, 8))
     plt.title("真實值 vs 預測值 (LSTM)", fontproperties=my_font, fontsize=14)
@@ -209,7 +192,7 @@ if __name__ == "__main__":
         # 5. 畫圖 - 各測站誤差
         calculate_station_mae(X_test, y_test_real, y_pred, feature_names)
 
-        # 6. 畫圖 - 真實 vs 預測 (替代原本的特徵重要性)
+        # 6. 畫圖 - 真實 vs 預測
         plot_prediction_scatter(y_test_real, y_pred)
 
     except FileNotFoundError:

@@ -2,12 +2,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# 讀取資料
 file_path = '/content/FINAL_MODEL_TRAINING_DATA.csv'
 df = pd.read_csv(file_path)
 print("✅ 資料讀取成功！")
 
-# 指定要使用的特徵欄位
 selected_features = [
     'PM2.5_Value',
     'PM25_Lag_1h',
@@ -19,16 +17,12 @@ selected_features = [
     'RH'
 ]
 
-# 只取指定特徵
+
 selected_df = df[selected_features]
-
-# 移除缺失值
 selected_df = selected_df.dropna()
-
-# 計算相關係數矩陣
 corr_matrix = selected_df.corr()
 
-# 取得與 PM2.5_Value 的相關係數（排除自己）
+# 與 PM2.5_Value 的相關係數
 target_col = 'PM2.5_Value'
 target_corr = corr_matrix[target_col].drop(target_col)
 target_corr = target_corr.sort_values(ascending=False)

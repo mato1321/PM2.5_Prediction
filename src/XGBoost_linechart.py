@@ -6,32 +6,28 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.font_manager as fm
 
-# 1. 讀取資料
 df = pd.read_csv('FINAL_MODEL_TRAINING_DATA.csv')
 
-# 處理布林值
 bool_cols = df.select_dtypes(include=['bool']).columns
 df[bool_cols] = df[bool_cols].astype(int)
 
-# 定義 X 和 y
 X = df.drop(columns=['PM2.5_Value'])
 y = df['PM2.5_Value']
 
-# 切分資料 (shuffle=False 取最後 20% 資料)
-# 注意：因為資料是依測站堆疊的，這最後 20% 很可能是「最後一個測站(如陽明站)」的所有年份資料
+# 切分資料 (取最後 20% 資料)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
 
-# 2. 訓練模型
+# 訓練模型
 print("正在訓練模型...")
 model = xgb.XGBRegressor(n_estimators=500, learning_rate=0.05, max_depth=6, n_jobs=-1, random_state=42)
 model.fit(X_train, y_train)
 print("訓練完成！")
 
-# 3. 預測
+#預測
 predict = model.predict(X_test)
 
 
-# 4. 繪圖設定
+# 繪圖設定
 font_path = '/content/微軟正黑體-1.ttf'
 try:
     fm.fontManager.addfont(font_path)
@@ -40,13 +36,12 @@ except:
     plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei']
 plt.rcParams["axes.unicode_minus"] = False
 
-# --- 5. [重點修改] 繪製「指定日期」的折線圖 ---
 
-days_to_show = 10           # 顯示 10 天
+days_to_show = 10         
 points_per_day = 24
 show_num = days_to_show * points_per_day
 
-# 取出測試集「最後」的 240 筆資料 (通常是該測站 2024 年底的數據)
+# 取出測試集最後的 240 筆資料
 y_plot = y_test.values[-show_num:]
 pred_plot = predict[-show_num:]
 plot_start_date = '2024-12-20'
@@ -59,8 +54,7 @@ plt.plot(range(show_num), y_plot, color='red', label='真實 PM2.5', linewidth=2
 plt.plot(range(show_num), pred_plot, color='blue', linestyle='--', label='預測結果(XGBoost)', linewidth=2, alpha=0.8)
 
 # 設定 X 軸刻度
-ticks = range(0, show_num, points_per_day) # 每 24 小時一格
-# 使用我們剛建立的 2024 日期來標示
+ticks = range(0, show_num, points_per_day) 
 labels = custom_dates.strftime('%Y-%m-%d').to_series().iloc[::points_per_day]
 
 plt.xticks(ticks=ticks, labels=labels, fontsize=11, rotation=15)

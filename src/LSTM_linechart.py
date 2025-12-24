@@ -6,10 +6,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import matplotlib.font_manager as fm
 
-# --- 1. 設定字體 (防呆) ---
 font_path = '/content/微軟正黑體-1.ttf'
 
-# --- 2. 資料準備 ---
 df = pd.read_csv('FINAL_MODEL_TRAINING_DATA.csv')
 bool_cols = df.select_dtypes(include=['bool']).columns
 df[bool_cols] = df[bool_cols].astype(int)
@@ -31,29 +29,28 @@ X_test_raw = X_scaled[split:]
 y_train = y_scaled[:split]
 y_test = y_scaled[split:]
 
-# 轉換為 3D (Samples, 1, Features) 配合您的 input_shape
+# 轉換為 3D (Samples, 1, Features) 
 X_train_dl = X_train_raw.reshape((X_train_raw.shape[0], 1, X_train_raw.shape[1]))
 X_test_dl = X_test_raw.reshape((X_test_raw.shape[0], 1, X_test_raw.shape[1]))
 
-# --- 3. 建立模型 (依照您的參數) ---
+# 建立模型 
 print("正在訓練 LSTM 模型...")
 model = Sequential([
-    # 單層 LSTM, 50 units
     LSTM(50, return_sequences=False, input_shape=(1, X_train_raw.shape[1])),
     Dropout(0.2), # 防止過擬合
     Dense(1)      # 輸出層
 ])
 
 model.compile(loss='mse', optimizer='adam')
-# 稍微增加 epochs 讓線貼得更近
+# 增加 epochs 讓線貼得更近
 model.fit(X_train_dl, y_train, epochs=50, batch_size=64, verbose=1, validation_split=0.1)
 
-# --- 4. 預測與還原 ---
+#預測與還原 
 pred_scaled = model.predict(X_test_dl)
 pred_inverse = scaler_y.inverse_transform(pred_scaled)
 y_test_inverse = scaler_y.inverse_transform(y_test)
 
-# --- 5. 繪製藍色虛線圖 ---
+# 繪製藍色虛線圖
 days_to_show = 10
 points_per_day = 24
 show_num = days_to_show * points_per_day
@@ -68,16 +65,16 @@ plt.figure(figsize=(14, 6))
 
 # A. 真實 PM2.5 (紅色實線)
 plt.plot(range(show_num), y_plot,
-         color='red',           # 紅色
-         linestyle='-',         # 實線
+         color='red',           
+         linestyle='-',      
          label='真實 PM2.5',
          linewidth=2,
          alpha=0.7)
 
 # B. LSTM 預測 (藍色虛線)
 plt.plot(range(show_num), pred_plot,
-         color='blue',          # 藍色
-         linestyle='--',        # 虛線
+         color='blue',         
+         linestyle='--',      
          label='LSTM 預測值',
          linewidth=2,
          alpha=0.9)

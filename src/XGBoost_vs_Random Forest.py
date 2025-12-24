@@ -7,21 +7,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import matplotlib.font_manager as fm
 
-# 1. 讀取資料
 df = pd.read_csv('FINAL_MODEL_TRAINING_DATA.csv')
 
-# 處理布林值
 bool_cols = df.select_dtypes(include=['bool']).columns
 df[bool_cols] = df[bool_cols].astype(int)
 
-# 定義 X 和 y
 X = df.drop(columns=['PM2.5_Value'])
 y = df['PM2.5_Value']
 
-# 切分資料 (shuffle=False)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
 
-# --- 2. 訓練模型 (雙模型對決) ---
+#訓練模型 
 
 # 模型 A: XGBoost
 print("正在訓練 XGBoost...")
@@ -37,7 +33,7 @@ pred_rf = model_rf.predict(X_test)
 
 print("訓練完成！")
 
-# --- 3. 繪圖設定 ---
+# 繪圖設定 
 font_path = '/content/微軟正黑體-1.ttf'
 try:
     fm.fontManager.addfont(font_path)
@@ -46,7 +42,7 @@ except:
     plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial']
 plt.rcParams["axes.unicode_minus"] = False
 
-# --- 4. 繪製對比圖 (XGB vs RF vs 真實) ---
+# 繪製對比圖 (XGB vs RF vs 真實)
 
 days_to_show = 10
 points_per_day = 24
@@ -65,13 +61,13 @@ plt.figure(figsize=(15, 7))
 # A. 真實值 (紅色實線)
 plt.plot(range(show_num), y_plot, color='red', label='真實 PM2.5', linewidth=2.5, alpha=0.6)
 
-# B. XGBoost (藍色虛線 - 保守派)
+# B. XGBoost (藍色虛線 )
 plt.plot(range(show_num), pred_plot_xgb, color='blue', linestyle='--', label='XGBoost', linewidth=2, alpha=0.8)
 
-# C. Random Forest (綠色點線 - 激進派)
+# C. Random Forest (綠色點線 )
 plt.plot(range(show_num), pred_plot_rf, color='green', linestyle=':', label='Random Forest', linewidth=2, alpha=0.9)
 
-# 設定軸標籤
+
 ticks = range(0, show_num, points_per_day)
 labels = custom_dates.strftime('%Y-%m-%d').to_series().iloc[::points_per_day]
 plt.xticks(ticks=ticks, labels=labels, fontsize=11, rotation=15)
@@ -84,7 +80,7 @@ plt.legend(fontsize=12, loc='upper left')
 plt.tight_layout()
 plt.show()
 
-# --- 5. 數據裁判 (到底誰準?) ---
+# 數據裁判 
 
 print("\n" + "="*40)
 print(f"{'模型':<15} | {'R2 Score':<10} | {'MAE (平均誤差)':<15}")
