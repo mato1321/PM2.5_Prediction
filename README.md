@@ -27,7 +27,7 @@ PM2.5_Prediction/
 │   ├── LSTM 系列 (長短期記憶網絡 - 深度學習)
 │   │   ├── LSTM_TaipeiPM2.5.py            # LSTM 未來預測 (2026-2028 三年預測)
 │   │   ├── LSTM_12_31_PM2.5.py            # LSTM 2024/12/31 詳細評估 (雙層架構)
-│   │   ├── LSTM_station. py                # 多測站 LSTM 預測 (48h lookback, 特徵工程)
+│   │   ├── LSTM_station. py               # 多測站 LSTM 預測 (48h lookback, 特徵工程)
 │   │   ├── LSTM_linechart.py              # LSTM 預測折線圖 (實際 vs 預測)
 │   │   ├── LSTM_barchart.py               # LSTM 性能評估柱狀圖
 │   │   └── LSTM_vs_RNN.py                 # 對比分析:  LSTM vs RNN 性能
@@ -91,8 +91,8 @@ pip install -r requirements.txt
 ####  **特徵分析** 
 ```bash
 cd src
-python All_Pearson_Correlation. py        # 查看所有特徵相關性
-python Weather_Pearson_Correlation. py    # 分析氣象因子影響
+python All_Pearson_Correlation. py       # 查看所有特徵相關性
+python Weather_Pearson_Correlation. py   # 分析氣象因子影響
 python feature_barchart.py               # 特徵相關性柱狀圖
 python weather_barchart.py               # 氣象變數影響分數
 ```
@@ -101,13 +101,13 @@ python weather_barchart.py               # 氣象變數影響分數
 ```bash
 python RandomForest_12_31_PM2.5.py       # 2024/12/31 預測評估
 python randomforest_linechart.py         # 折線圖可視化
-python randomforest_barchart. py          # 性能和特徵重要性
+python randomforest_barchart. py         # 性能和特徵重要性
 ```
 
 ####  **XGBoost 預測** (速度最快)
 ```bash
 python XGBoost_12_31_PM2.5.py            # 2024/12/31 預測評估
-python XGBoost_linechart. py              # 折線圖可視化
+python XGBoost_linechart. py             # 折線圖可視化
 python XGBoost_barchart.py               # 各站精度分析
 python XGBoost_vs_Random_Forest.py       # 與 Random Forest 對比
 ```
@@ -129,7 +129,7 @@ python RNN_station.py                    # 多測站預測
 python RNN_barchart.py                   # 性能評估
 ```
 
-#### 🔀 **模型對比**
+####  **模型對比**
 ```bash
 python LSTM_vs_RNN.py                    # LSTM vs RNN 對比
 ```
